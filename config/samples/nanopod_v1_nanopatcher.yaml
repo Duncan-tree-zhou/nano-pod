@@ -1,0 +1,6 @@
+apiVersion: nanopod.nanopod.treezh.cn/v1
+kind: NanoPatcher
+metadata:
+  name: nanopatcher-sample
+spec:
+  # TODO(user): Add fields here

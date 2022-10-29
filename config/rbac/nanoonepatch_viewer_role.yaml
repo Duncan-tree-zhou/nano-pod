@@ -1,0 +1,20 @@
+# permissions for end users to view nanoonepatches.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nanoonepatch-viewer-role
+rules:
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanoonepatches
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanoonepatches/status
+  verbs:
+  - get

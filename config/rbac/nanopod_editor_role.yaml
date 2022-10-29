@@ -1,0 +1,24 @@
+# permissions for end users to edit nanopods.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nanopod-editor-role
+rules:
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopods/status
+  verbs:
+  - get

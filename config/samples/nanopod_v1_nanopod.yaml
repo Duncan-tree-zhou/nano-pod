@@ -1,0 +1,6 @@
+apiVersion: nanopod.nanopod.treezh.cn/v1
+kind: NanoPod
+metadata:
+  name: nanopod-sample
+spec:
+  # TODO(user): Add fields here
