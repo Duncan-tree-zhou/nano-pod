@@ -17,20 +17,12 @@ limitations under the License.
 package v1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// NanoPodSpec defines the desired state of NanoPod
-type NanoPodSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of NanoPod. Edit nanopod_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
-}
 
 // NanoPodStatus defines the observed state of NanoPod
 type NanoPodStatus struct {
@@ -46,9 +38,40 @@ type NanoPod struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NanoPodSpec   `json:"spec,omitempty"`
-	Status NanoPodStatus `json:"status,omitempty"`
+	Spec     v1.PodSpec    `json:"spec,omitempty"`
+	strategy Strategy      `json:"strategy,omitempty"`
+	Status   NanoPodStatus `json:"status,omitempty"`
 }
+
+type Strategy struct {
+	PatchStrategy PatchStrategy `json:"patchStrategy,omitempty"`
+	MatchStrategy MatchStrategy `json:"matchStrategy,omitempty"`
+	Regex         []string      `json:"regex,omitempty"`
+}
+
+// StrategyType is the strategy how NanoPod patch to target Pod.
+// +enum
+type PatchStrategy string
+
+const (
+	// AppendPatch means the NanoPod would path all it's attributes on matched Pod if it's not defined in matched Pod
+	AppendPatch PatchStrategy = "AppendPatch"
+	// OverWritePatch means the NanoPod would patch or overwrite all it's attributes on matched Pod.
+	OverWritePatch PatchStrategy = "OverWritePatch"
+)
+
+type MatchStrategy string
+
+const (
+	// NameCompleteMatch means the NanoPod would only patch Pods and containers which had the same name with NanoPod.
+	NameCompleteMatch MatchStrategy = "NameCompleteMatch"
+	// NameRegexMatch means the name of NanoPod and nano containers would be regard as regex to match the Pods and containers.
+	NameRegexMatch MatchStrategy = "NameRegexMatch"
+	// NamePrefixMatch means the NanoPod would only patch Pods and containers whoes name.
+	NamePrefixMatch MatchStrategy = "NamePrefixMatch"
+	NameSuffixMatch MatchStrategy = "NameSuffixMatch"
+	MultiRegexMatch MatchStrategy = "MultiRegexMatch"
+)
 
 //+kubebuilder:object:root=true
 

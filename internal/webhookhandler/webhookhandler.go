@@ -10,6 +10,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=ignore,groups="",resources=pods,verbs=create;update,versions=v1,name=mpod.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;watch
+// +kubebuilder:rbac:groups="nanopod",resources=nanopod,verbs=get;list;watch
+// +kubebuilder:rbac:groups="nanopod",resources=nanopacher,verbs=get;list;watch
+
 type WebhookHandler interface {
 	admission.Handler
 	admission.DecoderInjector
@@ -28,12 +33,14 @@ func NewHandler(client client.Client, logger logr.Logger) WebhookHandler {
 	}
 }
 
-func (a *nanoPodPatcher) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (n *nanoPodPatcher) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &v1.Pod{}
-	err := a.decoder.Decode(req, pod)
+	err := n.decoder.Decode(req, pod)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
+
+	//n.client.Get(ctx, types.NamespacedName{Name: req.Namespace, Namespace: ""})
 
 	//在 pod 中修改字段
 	marshaledPod, err := json.Marshal(pod)
