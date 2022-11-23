@@ -1,0 +1,54 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - nanopod
+  resources:
+  - nanopod
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopatchers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopods/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nanopod.nanopod.treezh.cn
+  resources:
+  - nanopods/status
+  verbs:
+  - get
+  - patch
+  - update
