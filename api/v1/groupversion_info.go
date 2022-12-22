@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the nanopod v1 API group
-//+kubebuilder:object:generate=true
-//+groupName=nanopod.nanopod.treezh.cn
+// +kubebuilder:object:generate=true
+// +groupName=nanopod.nanopod.treezh.cn
 package v1
 
 import (

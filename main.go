@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"nano-pod-operator/internal/webhookhandler"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -98,24 +97,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "NanoPod")
 		os.Exit(1)
 	}
-	if err = (&controllers.NanoPatcherReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "NanoPatcher")
-		os.Exit(1)
-	}
-	if err = (&controllers.NanoOnePatchReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "NanoOnePatch")
-		os.Exit(1)
-	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
-			Handler: webhookhandler.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
+			Handler: nanopodhook.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
 		})
 	}
 	//+kubebuilder:scaffold:builder

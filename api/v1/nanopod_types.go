@@ -38,15 +38,13 @@ type NanoPod struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec     v1.PodSpec    `json:"spec,omitempty"`
-	strategy Strategy      `json:"strategy,omitempty"`
-	Status   NanoPodStatus `json:"status,omitempty"`
+	Spec   v1.PodTemplateSpec `json:"spec,omitempty"`
+	Status NanoPodStatus      `json:"status,omitempty"`
 }
 
-type Strategy struct {
-	PatchStrategy PatchStrategy `json:"patchStrategy,omitempty"`
-	MatchStrategy MatchStrategy `json:"matchStrategy,omitempty"`
-	Regex         []string      `json:"regex,omitempty"`
+type NanoPodSpec struct {
+	Template      *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
+	PatchStrategy PatchStrategy       `json:"patchStrategy,omitempty"`
 }
 
 // StrategyType is the strategy how NanoPod patch to target Pod.
@@ -58,19 +56,6 @@ const (
 	AppendPatch PatchStrategy = "AppendPatch"
 	// OverWritePatch means the NanoPod would patch or overwrite all it's attributes on matched Pod.
 	OverWritePatch PatchStrategy = "OverWritePatch"
-)
-
-type MatchStrategy string
-
-const (
-	// NameCompleteMatch means the NanoPod would only patch Pods and containers which had the same name with NanoPod.
-	NameCompleteMatch MatchStrategy = "NameCompleteMatch"
-	// NameRegexMatch means the name of NanoPod and nano containers would be regard as regex to match the Pods and containers.
-	NameRegexMatch MatchStrategy = "NameRegexMatch"
-	// NamePrefixMatch means the NanoPod would only patch Pods and containers whoes name.
-	NamePrefixMatch MatchStrategy = "NamePrefixMatch"
-	NameSuffixMatch MatchStrategy = "NameSuffixMatch"
-	MultiRegexMatch MatchStrategy = "MultiRegexMatch"
 )
 
 //+kubebuilder:object:root=true

@@ -31,7 +31,7 @@ func (in *NanoPod) DeepCopyInto(out *NanoPod) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
-	in.strategy.DeepCopyInto(&out.strategy)
+	in.Strategy.DeepCopyInto(&out.Strategy)
 	out.Status = in.Status
 }
 

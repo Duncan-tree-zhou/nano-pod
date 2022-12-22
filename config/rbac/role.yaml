@@ -15,17 +15,19 @@ rules:
 - apiGroups:
   - nanopod
   resources:
-  - nanopod
+  - nanopacher
   verbs:
   - get
   - list
   - watch
 - apiGroups:
-  - nanopod.nanopod.treezh.cn
+  - nanopod
   resources:
-  - nanopatchers/finalizers
+  - nanopod
   verbs:
-  - update
+  - get
+  - list
+  - watch
 - apiGroups:
   - nanopod.nanopod.treezh.cn
   resources:
