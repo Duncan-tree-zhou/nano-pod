@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"nano-pod-operator/internal/webhookhandler"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -99,8 +100,9 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		setupLog.Info("nanopod =========> enable webhooks..")
 		mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
-			Handler: nanopodhook.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
+			Handler: webhookhandler.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
 		})
 	}
 	//+kubebuilder:scaffold:builder

@@ -1,4 +1,4 @@
-package nanopodhook
+package webhookhandler
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 // +kubebuilder:rbac:groups="nanopod",resources=nanopod,verbs=get;list;watch
 // +kubebuilder:rbac:groups="nanopod",resources=nanopacher,verbs=get;list;watch
 
-type NanoPodHook interface {
+type WebhookHandler interface {
 	admission.Handler
 	admission.DecoderInjector
 }
@@ -32,7 +32,7 @@ type nanoPodWebhookHandler struct {
 	logger  logr.Logger
 }
 
-func NewHandler(client client.Client, logger logr.Logger) NanoPodHook {
+func NewHandler(client client.Client, logger logr.Logger) WebhookHandler {
 	return &nanoPodWebhookHandler{
 		client: client,
 		logger: logger,
@@ -40,7 +40,7 @@ func NewHandler(client client.Client, logger logr.Logger) NanoPodHook {
 }
 
 const (
-	AnnotationNanoPods = "nano-pods"
+	LabelNanoPods = "nano-pods"
 )
 
 var (
@@ -48,37 +48,52 @@ var (
 )
 
 func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	podInfo := unstructured.Unstructured{}
-	err := json.Unmarshal(req.Object.Raw, podInfo)
+	n.logger.Info("nanopod ===========> into handler.....")
+
+	var podMap = &map[string]interface{}{}
+	err := json.Unmarshal(req.Object.Raw, podMap)
+	n.logger.Info("nanopod ===========> unmarshal pod.....", "pod raw", string(req.Object.Raw))
 	if err != nil {
+		n.logger.Error(err, "nanopod ===========> error when unmarshal.....")
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
 
-	annotations := podInfo.GetAnnotations()
+	podInfo := &unstructured.Unstructured{Object: *podMap}
+	n.logger.Info("nanopod ===========> unmarshal pod.....", "namespace", podInfo.GetNamespace(), "name", podInfo.GetName())
+
+	labels := podInfo.GetLabels()
+	n.logger.Info("nanopod ===========> ", "labels", labels)
 	var nanoPodsStr string
 	var ok bool
-	if nanoPodsStr, ok = annotations[AnnotationNanoPods]; !ok {
-		return admission.Allowed("no nano pod annotation")
+	if nanoPodsStr, ok = labels[LabelNanoPods]; !ok {
+		n.logger.Info("nanopod ===========> nano pods is not set....")
 	}
 
 	var nanoPodNames = []string{"default"}
-	nanoPodNames = append(nanoPodNames, strings.Split(nanoPodsStr, ",")...)
 
-	nanoPods, err := n.getMatchedNanoPods(ctx, &podInfo, nanoPodNames)
+	if len(nanoPodsStr) > 0 {
+		nanoPodNames = append(nanoPodNames, strings.Split(nanoPodsStr, ",")...)
+	}
+
+	nanoPods, err := n.getMatchedNanoPods(ctx, podInfo, nanoPodNames)
 	if err != nil {
+		n.logger.Error(err, "nanopod ===========> failed to get matched nano pods....")
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
 
-	patchedRaw, err := nanoPodsPatch(ctx, &podInfo, nanoPods)
+	patchedRaw, err := nanoPodsPatch(ctx, podInfo, nanoPods)
 	if err != nil {
+		n.logger.Error(err, "nanopod ===========> failed to patch pod with nano pod....")
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
+
+	n.logger.Info("nanopod ===========> succeed to patch pod with nano pod....")
 
 	return admission.PatchResponseFromRaw(req.Object.Raw, patchedRaw)
 }

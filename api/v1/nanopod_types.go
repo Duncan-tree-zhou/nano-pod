@@ -38,8 +38,8 @@ type NanoPod struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   v1.PodTemplateSpec `json:"spec,omitempty"`
-	Status NanoPodStatus      `json:"status,omitempty"`
+	Spec   NanoPodSpec   `json:"spec,omitempty"`
+	Status NanoPodStatus `json:"status,omitempty"`
 }
 
 type NanoPodSpec struct {

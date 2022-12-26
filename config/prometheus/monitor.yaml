@@ -15,6 +15,10 @@ spec:
       bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
       tlsConfig:
         insecureSkipVerify: true
+        ca:
+          secret:
+            key: ca.crt
+            name: nano-pod-operator-controller-manager-service-cert
   selector:
     matchLabels:
       control-plane: controller-manager
