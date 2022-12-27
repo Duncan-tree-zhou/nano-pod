@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-logr/logr"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,18 +50,24 @@ var (
 
 func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	n.logger.Info("nanopod ===========> into handler.....")
-
-	var podMap = &map[string]interface{}{}
-	err := json.Unmarshal(req.Object.Raw, podMap)
-	n.logger.Info("nanopod ===========> unmarshal pod.....", "pod raw", string(req.Object.Raw))
+	pod := v1.Pod{}
+	err := n.decoder.Decode(req, &pod)
 	if err != nil {
-		n.logger.Error(err, "nanopod ===========> error when unmarshal.....")
+		n.logger.Error(err, "nanopod ===========> failed to decode req.Object.raw....")
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
 
-	podInfo := &unstructured.Unstructured{Object: *podMap}
+	podUtd, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&pod)
+	if err != nil {
+		n.logger.Error(err, "nanopod ===========> failed to unstructured pod....", "podName", pod.GetName(), "namespace", pod.GetNamespace())
+		res := admission.Errored(http.StatusInternalServerError, err)
+		res.Allowed = true
+		return res
+	}
+
+	podInfo := &unstructured.Unstructured{Object: podUtd}
 	n.logger.Info("nanopod ===========> unmarshal pod.....", "namespace", podInfo.GetNamespace(), "name", podInfo.GetName())
 
 	labels := podInfo.GetLabels()
@@ -121,7 +128,7 @@ func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, podInfo 
 func nanoPodsPatch(ctx context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
 	podUnstructured := podInfo.Object
 	for _, np := range nanoPods {
-		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(np.Spec)
+		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(np.Spec.Template))
 		if err != nil {
 			klog.Infof("failed to patch.", err)
 		}
