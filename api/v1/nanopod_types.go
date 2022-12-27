@@ -43,8 +43,8 @@ type NanoPod struct {
 }
 
 type NanoPodSpec struct {
-	Template      *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
-	PatchStrategy PatchStrategy       `json:"patchStrategy,omitempty"`
+	Template      v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
+	PatchStrategy PatchStrategy      `json:"patchStrategy,omitempty"`
 }
 
 // StrategyType is the strategy how NanoPod patch to target Pod.
