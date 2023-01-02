@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog/v2"
 	nanopodv1 "nano-pod-operator/api/v1"
 	"net/http"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"strings"
@@ -45,7 +46,9 @@ const (
 )
 
 var (
-	mergeItemStructSchema = strategicpatch.PatchMetaFromStruct{}
+	podStructSchema = strategicpatch.PatchMetaFromStruct{
+		T: reflect.TypeOf(v1.Pod{}),
+	}
 )
 
 func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -150,7 +153,7 @@ func (n *nanoPodWebhookHandler) nanoPodsPatch(ctx context.Context, podInfo *unst
 }
 
 func nanoPodPatch(original map[string]interface{}, patch map[string]interface{}) map[string]interface{} {
-	meta, err := strategicpatch.StrategicMergeMapPatchUsingLookupPatchMeta(original, patch, mergeItemStructSchema)
+	meta, err := strategicpatch.StrategicMergeMapPatchUsingLookupPatchMeta(original, patch, podStructSchema)
 	if err != nil {
 		klog.Infof("failed to patch.", err)
 	}
