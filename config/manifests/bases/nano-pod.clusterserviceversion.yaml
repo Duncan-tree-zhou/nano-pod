@@ -1,0 +1,49 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: nano-pod.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: NanoPod is the Schema for the nanopods API
+      displayName: Nano Pod
+      kind: NanoPod
+      name: nanopods.nanopod.nanopod.treezh.cn
+      version: v1
+  description: like nano-skip for pods
+  displayName: nanopod
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - nanopod
+  - admission
+  - webhook
+  links:
+  - name: Nano Pod
+    url: https://nano-pod.domain
+  maintainers:
+  - email: duncan.tree.zhou@gmail.com
+    name: Duncan-tree-zhou
+  maturity: alpha
+  provider:
+    name: DuncanTreeZhou
+  version: 0.0.0

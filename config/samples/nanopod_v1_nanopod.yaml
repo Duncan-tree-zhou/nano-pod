@@ -1,6 +1,19 @@
 apiVersion: nanopod.nanopod.treezh.cn/v1
 kind: NanoPod
 metadata:
-  name: nanopod-sample
+  name: default
+  namespace: nanopod-test
 spec:
-  # TODO(user): Add fields here
+  template:
+    metadata:
+      annotations:
+        nanopod/test: "enabled-case"
+      labels:
+        nanopod-test: "enabled-case"
+    spec:
+      containers:
+        - name: nginx
+          env:
+            - name: "defaultEnv1"
+              value: "enabled-case"
+      terminationGracePeriodSeconds: 10

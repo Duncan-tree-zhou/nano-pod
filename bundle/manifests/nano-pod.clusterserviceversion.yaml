@@ -1,0 +1,313 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "nanopod.nanopod.treezh.cn/v1",
+          "kind": "NanoPod",
+          "metadata": {
+            "name": "default",
+            "namespace": "nanopod-test"
+          },
+          "spec": {
+            "template": {
+              "metadata": {
+                "annotations": {
+                  "nanopod/test": "enabled-case"
+                },
+                "labels": {
+                  "nanopod-test": "enabled-case"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "env": [
+                      {
+                        "name": "defaultEnv1",
+                        "value": "enabled-case"
+                      }
+                    ],
+                    "name": "nginx"
+                  }
+                ],
+                "terminationGracePeriodSeconds": 10
+              }
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.24.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+  name: nano-pod.v1.24.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: NanoPod is the Schema for the nanopods API
+      displayName: Nano Pod
+      kind: NanoPod
+      name: nanopods.nanopod.nanopod.treezh.cn
+      version: v1
+  description: like nano-skip for pods
+  displayName: nanopod
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - list
+          - watch
+        - apiGroups:
+          - nanopod
+          resources:
+          - nanopacher
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - nanopod
+          resources:
+          - nanopod
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - nanopod.nanopod.treezh.cn
+          resources:
+          - nanopods
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - nanopod.nanopod.treezh.cn
+          resources:
+          - nanopods/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - nanopod.nanopod.treezh.cn
+          resources:
+          - nanopods/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: nano-pod-controller-manager
+      deployments:
+      - label:
+          app.kubernetes.io/name: nano-pod-operator
+          control-plane: controller-manager
+        name: nano-pod-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: nano-pod-operator
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                app.kubernetes.io/name: nano-pod-operator
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0
+                name: kube-rbac-proxy
+                ports:
+                - containerPort: 8443
+                  name: https
+                  protocol: TCP
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 5m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                command:
+                - /manager
+                image: controller:latest
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
+              securityContext:
+                runAsNonRoot: true
+              serviceAccountName: nano-pod-controller-manager
+              terminationGracePeriodSeconds: 10
+              volumes:
+              - name: cert
+                secret:
+                  defaultMode: 420
+                  secretName: nano-pod-operator-controller-manager-service-cert
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: nano-pod-controller-manager
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - nanopod
+  - admission
+  - webhook
+  links:
+  - name: Nano Pod
+    url: https://nano-pod.domain
+  maintainers:
+  - email: duncan.tree.zhou@gmail.com
+    name: Duncan-tree-zhou
+  maturity: alpha
+  provider:
+    name: DuncanTreeZhou
+  version: 1.24.0
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    conversionCRDs:
+    - nanopods.nanopod.nanopod.treezh.cn
+    deploymentName: nano-pod-controller-manager
+    generateName: cnanopods.kb.io
+    sideEffects: None
+    targetPort: 9443
+    type: ConversionWebhook
+    webhookPath: /convert
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: nano-pod-controller-manager
+    failurePolicy: Ignore
+    generateName: mpod.kb.io
+    objectSelector:
+      matchExpressions:
+      - key: nano-pods
+        operator: Exists
+    rules:
+    - apiGroups:
+      - ""
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - pods
+    sideEffects: None
+    targetPort: 9443
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-v1-pod

@@ -1,6 +1,14 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
+
+# Image URL to use all building/pushing image targets
+IMG_PREFIX ?= ghcr.io/${USER}/opentelemetry-operator
+IMG_REPO ?= opentelemetry-operator
+IMG ?= ${IMG_PREFIX}/${IMG_REPO}:${VERSION}
+BUNDLE_IMG ?= ${IMG_PREFIX}/${IMG_REPO}-bundle:${VERSION}
+
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24.2
 
@@ -155,7 +163,7 @@ operator-sdk:
 .PHONY: bundle
 bundle: kustomize operator-sdk manifests set-image-controller
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(OPERATOR_SDK_VERSION) $(BUNDLE_METADATA_OPTS)
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 # Build the bundle image, used only for local dev purposes
