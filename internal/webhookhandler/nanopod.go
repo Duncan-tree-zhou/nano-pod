@@ -81,6 +81,7 @@ func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Reques
 	n.logger.V(3).Info("pod to podUtd.....", "podUtd", podUtd)
 	podInfo := &unstructured.Unstructured{Object: podUtd}
 
+	// to find the matched pods
 	labels := podInfo.GetLabels()
 	n.logger.V(3).Info("get labels.....", "labels", labels)
 	var nanoPodsStr string
@@ -104,6 +105,7 @@ func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Reques
 	}
 	n.logger.V(3).Info("get matched nanoPods .....", "nanoPods", nanoPods)
 
+	// patch NanoPods to pod
 	patchedRaw, err := n.nanoPodsPatch(ctx, podInfo, nanoPods)
 	if err != nil {
 		n.logger.Error(err, "failed to patch pod with nano pod....")
@@ -136,7 +138,7 @@ func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, nanoPodN
 	return nanoPods, nil
 }
 
-func (n *nanoPodWebhookHandler) nanoPodsPatch(ctx context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
+func (n *nanoPodWebhookHandler) nanoPodsPatch(_ context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
 	podUnstructured := podInfo.Object
 	n.logger.V(3).Info("podUtd....", "podUtd", podUnstructured)
 	for _, np := range nanoPods {
