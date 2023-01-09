@@ -52,8 +52,6 @@ type NanoPodSpec struct {
 type PatchStrategy string
 
 const (
-	// AppendPatch means the NanoPod would path all it's attributes on matched Pod if it's not defined in matched Pod
-	AppendPatch PatchStrategy = "AppendPatch"
 	// OverWritePatch means the NanoPod would patch or overwrite all it's attributes on matched Pod.
 	OverWritePatch PatchStrategy = "OverWritePatch"
 )

@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/klog/v2"
 	nanopodv1 "nano-pod-operator/api/v1"
+	"nano-pod-operator/internal/patcherfactory"
 	"net/http"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,37 +53,46 @@ var (
 )
 
 func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	n.logger.V(3).Info("into handler.....")
-	pod := v1.Pod{}
-	err := n.decoder.Decode(req, &pod)
-	if err != nil {
-		n.logger.Error(err, "failed to decode req.Object.Raw....")
-		res := admission.Errored(http.StatusInternalServerError, err)
-		res.Allowed = true
-		return res
-	}
-
-	n.logger.V(3).Info("pod decoded....", "podGenName", pod.GetGenerateName())
+	// check if namespace had been created.
 	ns := v1.Namespace{}
-	err = n.client.Get(ctx, types.NamespacedName{Name: req.Namespace, Namespace: ""}, &ns)
+	err := n.client.Get(ctx, types.NamespacedName{Name: req.Namespace, Namespace: ""}, &ns)
 	if err != nil {
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
 
-	podUtd, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&pod)
+	// decode pod raw data to Utd.
+	podInfo, err := n.DecodeToUtd(ctx, req, ns)
 	if err != nil {
-		n.logger.Error(err, "failed to unstructured pod....", "podName", pod.GetName(), "namespace", ns.Namespace)
 		res := admission.Errored(http.StatusInternalServerError, err)
 		res.Allowed = true
 		return res
 	}
-	n.logger.V(3).Info("pod to podUtd.....", "podUtd", podUtd)
-	podInfo := &unstructured.Unstructured{Object: podUtd}
 
 	// to find the matched pods
-	labels := podInfo.GetLabels()
+	nanoPods, err := n.FindNanoPods(ctx, podInfo, ns)
+	if err != nil {
+		res := admission.Errored(http.StatusInternalServerError, err)
+		res.Allowed = true
+		return res
+	}
+
+	// patch NanoPods to pod
+	patchedRaw, err := n.BatchPatch(ctx, podInfo, nanoPods)
+	if err != nil {
+		n.logger.Error(err, "failed to patch pod with nano pod....")
+		res := admission.Errored(http.StatusInternalServerError, err)
+		res.Allowed = true
+		return res
+	}
+	n.logger.V(3).Info("succeed to patch pod with nano pod....", "patchedRaw", string(patchedRaw))
+
+	return admission.PatchResponseFromRaw(req.Object.Raw, patchedRaw)
+}
+
+func (n *nanoPodWebhookHandler) FindNanoPods(ctx context.Context, podUtd *unstructured.Unstructured, ns v1.Namespace) ([]nanopodv1.NanoPod, error) {
+	labels := podUtd.GetLabels()
 	n.logger.V(3).Info("get labels.....", "labels", labels)
 	var nanoPodsStr string
 	var ok bool
@@ -99,24 +109,32 @@ func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Reques
 	nanoPods, err := n.getMatchedNanoPods(ctx, nanoPodNames, &ns)
 	if err != nil {
 		n.logger.Error(err, "failed to get matched nano pods....")
-		res := admission.Errored(http.StatusInternalServerError, err)
-		res.Allowed = true
-		return res
+		return nil, err
 	}
 	n.logger.V(3).Info("get matched nanoPods .....", "nanoPods", nanoPods)
+	return nanoPods, nil
+}
 
-	// patch NanoPods to pod
-	patchedRaw, err := n.nanoPodsPatch(ctx, podInfo, nanoPods)
+func (n *nanoPodWebhookHandler) DecodeToUtd(_ context.Context, req admission.Request, ns v1.Namespace) (*unstructured.Unstructured, error) {
+	n.logger.V(3).Info("into handler.....")
+	pod := v1.Pod{}
+	err := n.decoder.Decode(req, &pod)
 	if err != nil {
-		n.logger.Error(err, "failed to patch pod with nano pod....")
-		res := admission.Errored(http.StatusInternalServerError, err)
-		res.Allowed = true
-		return res
+		n.logger.Error(err, "failed to decode req.Object.Raw....")
+		return nil, err
 	}
+	n.logger.V(3).Info("pod decoded....", "podGenName", pod.GetGenerateName())
 
-	n.logger.V(3).Info("succeed to patch pod with nano pod....", "patchedRaw", string(patchedRaw))
+	// prepared unstructured pod info.
+	podMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&pod)
+	if err != nil {
+		n.logger.Error(err, "failed to unstructured pod....", "podName", pod.GetName(), "namespace", ns.Namespace)
+		return nil, err
+	}
+	n.logger.V(3).Info("pod to podMap.....", "podMap", podMap)
+	podUtd := &unstructured.Unstructured{Object: podMap}
 
-	return admission.PatchResponseFromRaw(req.Object.Raw, patchedRaw)
+	return podUtd, err
 }
 
 func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, nanoPodNames []string, namespace *v1.Namespace) ([]nanopodv1.NanoPod, error) {
@@ -138,26 +156,22 @@ func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, nanoPodN
 	return nanoPods, nil
 }
 
-func (n *nanoPodWebhookHandler) nanoPodsPatch(_ context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
+func (n *nanoPodWebhookHandler) BatchPatch(_ context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
 	podUnstructured := podInfo.Object
-	n.logger.V(3).Info("podUtd....", "podUtd", podUnstructured)
+	n.logger.V(4).Info("podUtd before....", "podUtd", podUnstructured)
 	for _, np := range nanoPods {
 		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(np.Spec.Template))
-		n.logger.V(3).Info("nanoPodUtd....", "nanoPodUtd", nanoPodUnstructured)
+		n.logger.V(4).Info("nanoPodTemplateUtd....", "nanoPodTemplateUtd", nanoPodUnstructured)
 		if err != nil {
-			klog.Errorf("failed to patch.", err)
+			klog.Errorf("failed to convert nanoPod.spec.template to unstructured (%s).", np.Name, err)
 		}
-		podUnstructured = nanoPodPatch(podUnstructured, nanoPodUnstructured)
+		podUnstructured, err = patcherfactory.GetPatcher(np.Spec.PatchStrategy).Patch(podUnstructured, nanoPodUnstructured)
+		if err != nil {
+			klog.Errorf("failed to patch nanoPod %s.", np.Name, err)
+		}
+		n.logger.V(4).Info("podUtd patched with ....", "nanoPod", np.Name, "podUtd", podUnstructured)
 	}
 	return json.Marshal(podUnstructured)
-}
-
-func nanoPodPatch(original map[string]interface{}, patch map[string]interface{}) map[string]interface{} {
-	meta, err := strategicpatch.StrategicMergeMapPatchUsingLookupPatchMeta(original, patch, podStructSchema)
-	if err != nil {
-		klog.Errorf("failed to patch.", err)
-	}
-	return meta
 }
 
 func (p *nanoPodWebhookHandler) InjectDecoder(d *admission.Decoder) error {
