@@ -86,18 +86,18 @@ func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Reques
 		res.Allowed = true
 		return res
 	}
-	n.logger.V(3).Info("succeed to patch pod with nano pod....", "patchedRaw", string(patchedRaw))
+	n.logger.V(1).Info("succeed to patch pod with nano pod....", "patchedRaw", string(patchedRaw))
 
 	return admission.PatchResponseFromRaw(req.Object.Raw, patchedRaw)
 }
 
 func (n *nanoPodWebhookHandler) FindNanoPods(ctx context.Context, podUtd *unstructured.Unstructured, ns v1.Namespace) ([]nanopodv1.NanoPod, error) {
 	labels := podUtd.GetLabels()
-	n.logger.V(3).Info("get labels.....", "labels", labels)
+	n.logger.V(1).Info("get labels.....", "labels", labels)
 	var nanoPodsStr string
 	var ok bool
 	if nanoPodsStr, ok = labels[LabelNanoPods]; !ok {
-		n.logger.V(3).Info("nano pods is not set....")
+		n.logger.V(1).Info("nano pods is not set....")
 	}
 
 	var nanoPodNames = []string{"default"}
@@ -111,19 +111,19 @@ func (n *nanoPodWebhookHandler) FindNanoPods(ctx context.Context, podUtd *unstru
 		n.logger.Error(err, "failed to get matched nano pods....")
 		return nil, err
 	}
-	n.logger.V(3).Info("get matched nanoPods .....", "nanoPods", nanoPods)
+	n.logger.V(1).Info("get matched nanoPods .....", "nanoPods", nanoPods)
 	return nanoPods, nil
 }
 
 func (n *nanoPodWebhookHandler) DecodeToUtd(_ context.Context, req admission.Request, ns v1.Namespace) (*unstructured.Unstructured, error) {
-	n.logger.V(3).Info("into handler.....")
+	n.logger.V(1).Info("into handler.....")
 	pod := v1.Pod{}
 	err := n.decoder.Decode(req, &pod)
 	if err != nil {
 		n.logger.Error(err, "failed to decode req.Object.Raw....")
 		return nil, err
 	}
-	n.logger.V(3).Info("pod decoded....", "podGenName", pod.GetGenerateName())
+	n.logger.V(1).Info("pod decoded....", "podGenName", pod.GetGenerateName())
 
 	// prepared unstructured pod info.
 	podMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&pod)
@@ -131,7 +131,7 @@ func (n *nanoPodWebhookHandler) DecodeToUtd(_ context.Context, req admission.Req
 		n.logger.Error(err, "failed to unstructured pod....", "podName", pod.GetName(), "namespace", ns.Namespace)
 		return nil, err
 	}
-	n.logger.V(3).Info("pod to podMap.....", "podMap", podMap)
+	n.logger.V(1).Info("pod to podMap.....", "podMap", podMap)
 	podUtd := &unstructured.Unstructured{Object: podMap}
 
 	return podUtd, err
@@ -158,10 +158,10 @@ func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, nanoPodN
 
 func (n *nanoPodWebhookHandler) BatchPatch(_ context.Context, podInfo *unstructured.Unstructured, nanoPods []nanopodv1.NanoPod) ([]byte, error) {
 	podUnstructured := podInfo.Object
-	n.logger.V(4).Info("podUtd before....", "podUtd", podUnstructured)
+	n.logger.V(1).Info("podUtd before....", "podUtd", podUnstructured)
 	for _, np := range nanoPods {
 		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(np.Spec.Template))
-		n.logger.V(4).Info("nanoPodTemplateUtd....", "nanoPodTemplateUtd", nanoPodUnstructured)
+		n.logger.V(1).Info("nanoPodTemplateUtd....", "nanoPodTemplateUtd", nanoPodUnstructured)
 		if err != nil {
 			klog.Errorf("failed to convert nanoPod.spec.template to unstructured (%s).", np.Name, err)
 		}
@@ -169,7 +169,7 @@ func (n *nanoPodWebhookHandler) BatchPatch(_ context.Context, podInfo *unstructu
 		if err != nil {
 			klog.Errorf("failed to patch nanoPod %s.", np.Name, err)
 		}
-		n.logger.V(4).Info("podUtd patched with ....", "nanoPod", np.Name, "podUtd", podUnstructured)
+		n.logger.V(1).Info("podUtd patched with ....", "nanoPod", np.Name, "podUtd", podUnstructured)
 	}
 	return json.Marshal(podUnstructured)
 }

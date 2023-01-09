@@ -1,24 +1,3 @@
-#apiVersion: nanopod.nanopod.treezh.cn/v1
-#kind: NanoPod
-#metadata:
-#  name: nginx-nano-pod
-#  namespace: nanopod-test
-#spec:
-#  template:
-#    metadata:
-#      annotations:
-#        nanopod/test: "nanopods-case"
-#      labels:
-#        nanopod-test: "nanopods-case"
-#    spec:
-#      containers:
-#        - name: nginx
-#          env:
-#            - name: "env1"
-#              value: " nanopods-case"
-#      serviceAccountName: controller-manager
-#      terminationGracePeriodSeconds: 10
----
 apiVersion: nanopod.nanopod.treezh.cn/v1
 kind: NanoPod
 metadata:
@@ -33,8 +12,16 @@ spec:
         nanopod-test: "enabled-case"
     spec:
       containers:
-        - name: nginx
-          env:
-            - name: "defaultEnv1"
-              value: "enabled-case"
+      - name: nginx02
+        env:
+          - name: "env0202"
+            value: "value0202"
+          - name: "env0201"
+            value: "value0203"
+      - name: nginx01
+        env:
+        - name: "env0102"
+          value: "value0102"
+        - name: "env0101"
+          value: "value0103"
       terminationGracePeriodSeconds: 10

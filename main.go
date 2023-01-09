@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"go.uber.org/zap/zapcore"
 	"nano-pod-operator/internal/webhookhandler"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -63,8 +64,7 @@ func main() {
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
-
+	opts.Level = zapcore.DebugLevel
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		setupLog.Info("nanopod =========> enable webhooks..")
+		setupLog.V(1).Info("nanopod =========> enable webhooks..")
 		mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
 			Handler: webhookhandler.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
 		})
