@@ -12,12 +12,27 @@ spec:
         nanopod-test: "enabled-case"
     spec:
       containers:
-      - name: nginx02
+      - name: mysql02
+        image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
         env:
           - name: "env0202"
             value: "value0202"
           - name: "env0201"
             value: "value0203"
+          - name: "MYSQL_ROOT_PASSWORD"
+            value: "Welcome"
+          - name: "MYSQL_DATABASE"
+            value: "mydb"
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
       - name: nginx01
         env:
         - name: "env0102"

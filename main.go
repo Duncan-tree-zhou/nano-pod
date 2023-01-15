@@ -18,10 +18,12 @@ package main
 
 import (
 	"flag"
-	"go.uber.org/zap/zapcore"
-	"nano-pod-operator/internal/webhookhandler"
 	"os"
+
+	"go.uber.org/zap/zapcore"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"nano-pod-operator/internal/webhookhandler"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -104,6 +106,10 @@ func main() {
 		mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
 			Handler: webhookhandler.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
 		})
+	}
+	if err = (&nanopodv1.NanoPod{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "NanoPod")
+		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
 

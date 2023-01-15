@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/klog/v2"
 	nanopodv1 "nano-pod-operator/api/v1"
 	"nano-pod-operator/internal/patcherfactory"
 	"net/http"
@@ -53,6 +52,7 @@ var (
 )
 
 func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	n.logger.V(1).Info("======================== NanoPod Handler =========================")
 	// check if namespace had been created.
 	ns := v1.Namespace{}
 	err := n.client.Get(ctx, types.NamespacedName{Name: req.Namespace, Namespace: ""}, &ns)
@@ -116,7 +116,6 @@ func (n *nanoPodWebhookHandler) FindNanoPods(ctx context.Context, podUtd *unstru
 }
 
 func (n *nanoPodWebhookHandler) DecodeToUtd(_ context.Context, req admission.Request, ns v1.Namespace) (*unstructured.Unstructured, error) {
-	n.logger.V(1).Info("into handler.....")
 	pod := v1.Pod{}
 	err := n.decoder.Decode(req, &pod)
 	if err != nil {
@@ -150,6 +149,7 @@ func (n *nanoPodWebhookHandler) getMatchedNanoPods(ctx context.Context, nanoPodN
 		err := n.client.Get(ctx, namespacedName, nanoPod)
 		if err != nil {
 			n.logger.Error(err, "failed to find nano pods....", "nanoPodName", nanoPodName, "namespace", namespace.Name)
+			continue
 		}
 		nanoPods = append(nanoPods, *nanoPod)
 	}
@@ -163,11 +163,11 @@ func (n *nanoPodWebhookHandler) BatchPatch(_ context.Context, podInfo *unstructu
 		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(np.Spec.Template))
 		n.logger.V(1).Info("nanoPodTemplateUtd....", "nanoPodTemplateUtd", nanoPodUnstructured)
 		if err != nil {
-			klog.Errorf("failed to convert nanoPod.spec.template to unstructured (%s).", np.Name, err)
+			n.logger.Error(err, "failed to convert nanoPod.spec.template to unstructured.", "nanoPod name", np.Name)
 		}
 		podUnstructured, err = patcherfactory.GetPatcher(np.Spec.PatchStrategy).Patch(podUnstructured, nanoPodUnstructured)
 		if err != nil {
-			klog.Errorf("failed to patch nanoPod %s.", np.Name, err)
+			n.logger.Error(err, "failed to patch nanoPod %s.", "nanoPod name", np.Name)
 		}
 		n.logger.V(1).Info("podUtd patched with ....", "nanoPod", np.Name, "podUtd", podUnstructured)
 	}

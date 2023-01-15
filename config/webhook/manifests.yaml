@@ -11,6 +11,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-nanopod-nanopod-treezh-cn-v1-nanopod
+  failurePolicy: Fail
+  name: mnanopod.kb.io
+  rules:
+  - apiGroups:
+    - nanopod.nanopod.treezh.cn
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nanopods
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-v1-pod
   failurePolicy: Ignore
   name: mpod.kb.io
@@ -24,4 +44,31 @@ webhooks:
     - UPDATE
     resources:
     - pods
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-nanopod-nanopod-treezh-cn-v1-nanopod
+  failurePolicy: Fail
+  name: vnanopod.kb.io
+  rules:
+  - apiGroups:
+    - nanopod.nanopod.treezh.cn
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nanopods
   sideEffects: None

@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: treezh-docker.pkg.coding.net/demo03/opentelemetry-public/nano-pod-controller
-  newTag: "20230109.5"
+  newTag: "20230110.1"
