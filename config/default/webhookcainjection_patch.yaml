@@ -12,11 +12,12 @@ webhooks:
       matchExpressions:
         - key: "nano-pods"
           operator: "Exists"
-
-#---
-#apiVersion: admissionregistration.k8s.io/v1
-#kind: ValidatingWebhookConfiguration
-#metadata:
-#  name: validating-webhook-configuration
-#  annotations:
-#    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
+webhooks:
+  - name: vnanopod.kb.io

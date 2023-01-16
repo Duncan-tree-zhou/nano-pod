@@ -15,13 +15,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sync"
 	"testing"
 	"time"
 )
 
-var logger = logf.Log.WithName("unit-tests")
+var logger = zap.New(zap.UseDevMode(true))
 
 var (
 	k8sClient  client.Client

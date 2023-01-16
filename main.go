@@ -18,9 +18,10 @@ package main
 
 import (
 	"flag"
-	"os"
-
 	"go.uber.org/zap/zapcore"
+	"nano-pod-operator/internal/patcherfactory"
+	"nano-pod-operator/internal/patcherfactory/patcher"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"nano-pod-operator/internal/webhookhandler"
@@ -57,16 +58,20 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var logLevel int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&logLevel, "v", 0,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
-	opts.Level = zapcore.DebugLevel
+	opts.Level = zapcore.Level(logLevel)
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -103,8 +108,13 @@ func main() {
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		setupLog.V(1).Info("nanopod =========> enable webhooks..")
+		patcherFactoryBuilder := patcherfactory.NewBuilder()
+		patcherFactoryBuilder.Register(nanopodv1.OverWritePatch, &patcher.OverWritePatcher{})
 		mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{
-			Handler: webhookhandler.NewHandler(mgr.GetClient(), ctrl.Log.WithName("pod-webhook")),
+			Handler: webhookhandler.NewHandler(
+				mgr.GetClient(),
+				ctrl.Log.WithName("pod-mutate-webhook"),
+				patcherFactoryBuilder.Build()),
 		})
 	}
 	if err = (&nanopodv1.NanoPod{}).SetupWebhookWithManager(mgr); err != nil {

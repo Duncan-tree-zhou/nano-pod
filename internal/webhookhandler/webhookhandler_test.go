@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes/scheme"
 	nanopodv1 "nano-pod-operator/api/v1"
+	"nano-pod-operator/internal/patcherfactory"
+	"nano-pod-operator/internal/patcherfactory/patcher"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"testing"
 )
@@ -39,24 +41,12 @@ var (
 					TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
 					Containers: []v1.Container{
 						{
-							Name:  "mysql02",
-							Image: "mysql:8.0.31",
+							Image: "treezh-docker.pkg.coding.net/demo03/public/nginx:1.21",
+							Name:  "nginx02",
 							Env: []v1.EnvVar{
 								{
-									Name:  "env0202",
-									Value: "value0202",
-								},
-								{
 									Name:  "env0201",
-									Value: "value0203",
-								},
-								{
-									Name:  "MYSQL_ROOT_PASSWORD",
-									Value: "password",
-								},
-								{
-									Name:  "MYSQL_DATABASE",
-									Value: "mydb",
+									Value: "value0201",
 								},
 							},
 							LivenessProbe: &v1.Probe{
@@ -64,7 +54,7 @@ var (
 									TCPSocket: &v1.TCPSocketAction{
 										Port: intstr.IntOrString{
 											Type:   intstr.String,
-											StrVal: "3306",
+											StrVal: "80",
 										},
 									},
 								},
@@ -76,16 +66,26 @@ var (
 									TCPSocket: &v1.TCPSocketAction{
 										Port: intstr.IntOrString{
 											Type:   intstr.String,
-											StrVal: "3306",
+											StrVal: "80",
 										},
 									},
 								},
 								InitialDelaySeconds: 5,
 								PeriodSeconds:       10,
 							},
+							Resources: v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    *resource.NewQuantity(500, resource.DecimalSI),
+									v1.ResourceMemory: *resource.NewQuantity(128, resource.BinarySI),
+								},
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    *resource.NewQuantity(500, resource.DecimalSI),
+									v1.ResourceMemory: *resource.NewQuantity(128, resource.BinarySI),
+								},
+							},
 						},
 						{
-							Name: "nginx01",
+							Name: "mysql01",
 							Env: []v1.EnvVar{
 								{
 									Name:  "env0102",
@@ -95,6 +95,30 @@ var (
 									Name:  "env0101",
 									Value: "value0103",
 								},
+							},
+							LivenessProbe: &v1.Probe{
+								ProbeHandler: v1.ProbeHandler{
+									Exec: &v1.ExecAction{
+										Command: []string{
+											"mysqladmin", "ping",
+										},
+									},
+								},
+								InitialDelaySeconds: 30,
+								PeriodSeconds:       10,
+								TimeoutSeconds:      5,
+							},
+							ReadinessProbe: &v1.Probe{
+								ProbeHandler: v1.ProbeHandler{
+									Exec: &v1.ExecAction{
+										Command: []string{
+											"mysql", "-h", "127.0.0.1", "-e", "SELECT 1",
+										},
+									},
+								},
+								InitialDelaySeconds: 5,
+								PeriodSeconds:       2,
+								TimeoutSeconds:      1,
 							},
 						},
 					},
@@ -114,12 +138,20 @@ var (
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Image: "treezh-docker.pkg.coding.net/demo03/public/nginx:1.21",
-					Name:  "nginx01",
+					Name:  "mysql01",
+					Image: "mysql:8.0.31",
 					Env: []v1.EnvVar{
 						{
 							Name:  "env0101",
 							Value: "value0101",
+						},
+						{
+							Name:  "MYSQL_ALLOW_EMPTY_PASSWORD",
+							Value: "true",
+						},
+						{
+							Name:  "MYSQL_DATABASE",
+							Value: "mydb",
 						},
 					},
 					LivenessProbe: &v1.Probe{
@@ -127,7 +159,7 @@ var (
 							TCPSocket: &v1.TCPSocketAction{
 								Port: intstr.IntOrString{
 									Type:   intstr.String,
-									StrVal: "80",
+									StrVal: "3306",
 								},
 							},
 						},
@@ -139,22 +171,12 @@ var (
 							TCPSocket: &v1.TCPSocketAction{
 								Port: intstr.IntOrString{
 									Type:   intstr.String,
-									StrVal: "80",
+									StrVal: "3306",
 								},
 							},
 						},
 						InitialDelaySeconds: 5,
 						PeriodSeconds:       10,
-					},
-					Resources: v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceCPU:    *resource.NewQuantity(500, resource.DecimalSI),
-							v1.ResourceMemory: *resource.NewQuantity(128, resource.BinarySI),
-						},
-						Requests: v1.ResourceList{
-							v1.ResourceCPU:    *resource.NewQuantity(500, resource.DecimalSI),
-							v1.ResourceMemory: *resource.NewQuantity(128, resource.BinarySI),
-						},
 					},
 				},
 			},
@@ -194,12 +216,13 @@ func TestOverwritePatch(t *testing.T) {
 		decoder, err := admission.NewDecoder(scheme.Scheme)
 		require.NoError(t, err)
 
-		injector := NewHandler(k8sClient, logger)
+		injector := NewHandler(k8sClient, logger, patcherfactory.NewBuilder().Register(nanopodv1.OverWritePatch, &patcher.OverWritePatcher{}).Build())
 		err = injector.InjectDecoder(decoder)
 		require.NoError(t, err)
 
 		// test
 		res := injector.Handle(context.Background(), req)
+		logger.V(1).Info("admission response.", "patches", res.Patches)
 
 		// verify
 		assert.True(t, res.Allowed)

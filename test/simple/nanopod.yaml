@@ -2,7 +2,7 @@ apiVersion: nanopod.nanopod.treezh.cn/v1
 kind: NanoPod
 metadata:
   name: default
-  namespace: nanopod-test
+  namespace: nano-pod-test
 spec:
   template:
     metadata:
@@ -12,31 +12,51 @@ spec:
         nanopod-test: "enabled-case"
     spec:
       containers:
-      - name: mysql02
-        image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
+      - name: mysql01
         env:
-          - name: "env0202"
-            value: "value0202"
-          - name: "env0201"
-            value: "value0203"
-          - name: "MYSQL_ROOT_PASSWORD"
-            value: "Welcome"
-          - name: "MYSQL_DATABASE"
-            value: "mydb"
+          - name: "env0101"
+            value: "value0103"
+          - name: "env0102"
+            value: "value0103"
+#        livenessProbe:
+#          exec:
+#            command: ["mysqladmin", "ping"]
+#          initialDelaySeconds: 30
+#          periodSeconds: 10
+#          timeoutSeconds: 5
+#        readinessProbe:
+#          exec:
+#            command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+#          initialDelaySeconds: 5
+#          periodSeconds: 2
+#          timeoutSeconds: 1
+      - name: nginx02
+        env:
+          - name: env0201
+            value: value0201
+        image: treezh-docker.pkg.coding.net/demo03/public/nginx:1.21
+        imagePullPolicy: IfNotPresent
         livenessProbe:
-          tcpSocket:
-            port: 3306
+          failureThreshold: 3
           initialDelaySeconds: 15
           periodSeconds: 20
-        readinessProbe:
+          successThreshold: 1
           tcpSocket:
-            port: 3306
+            port: 80
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 3
           initialDelaySeconds: 5
           periodSeconds: 10
-      - name: nginx01
-        env:
-        - name: "env0102"
-          value: "value0102"
-        - name: "env0101"
-          value: "value0103"
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
       terminationGracePeriodSeconds: 10

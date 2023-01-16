@@ -29,15 +29,17 @@ type WebhookHandler interface {
 }
 
 type nanoPodWebhookHandler struct {
-	client  client.Client
-	decoder *admission.Decoder
-	logger  logr.Logger
+	client         client.Client
+	decoder        *admission.Decoder
+	logger         logr.Logger
+	patcherFactory patcherfactory.PatcherFactory
 }
 
-func NewHandler(client client.Client, logger logr.Logger) WebhookHandler {
+func NewHandler(client client.Client, logger logr.Logger, patcherFactory *patcherfactory.PatcherFactory) WebhookHandler {
 	return &nanoPodWebhookHandler{
-		client: client,
-		logger: logger,
+		client:         client,
+		logger:         logger,
+		patcherFactory: *patcherFactory,
 	}
 }
 
@@ -87,6 +89,7 @@ func (n *nanoPodWebhookHandler) Handle(ctx context.Context, req admission.Reques
 		return res
 	}
 	n.logger.V(1).Info("succeed to patch pod with nano pod....", "patchedRaw", string(patchedRaw))
+	n.logger.V(1).Info("succeed to patch pod with nano pod....", "req.Object.Raw", string(req.Object.Raw))
 
 	return admission.PatchResponseFromRaw(req.Object.Raw, patchedRaw)
 }
@@ -161,11 +164,11 @@ func (n *nanoPodWebhookHandler) BatchPatch(_ context.Context, podInfo *unstructu
 	n.logger.V(1).Info("podUtd before....", "podUtd", podUnstructured)
 	for _, np := range nanoPods {
 		nanoPodUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(np.Spec.Template))
-		n.logger.V(1).Info("nanoPodTemplateUtd....", "nanoPodTemplateUtd", nanoPodUnstructured)
+		n.logger.V(1).Info("nanoPodTemplateUtd ....", "nanoPodTemplateUtd", nanoPodUnstructured)
 		if err != nil {
 			n.logger.Error(err, "failed to convert nanoPod.spec.template to unstructured.", "nanoPod name", np.Name)
 		}
-		podUnstructured, err = patcherfactory.GetPatcher(np.Spec.PatchStrategy).Patch(podUnstructured, nanoPodUnstructured)
+		podUnstructured, err = n.patcherFactory.GetPatcher(np.Spec.PatchStrategy).Patch(podUnstructured, nanoPodUnstructured)
 		if err != nil {
 			n.logger.Error(err, "failed to patch nanoPod %s.", "nanoPod name", np.Name)
 		}
