@@ -8,7 +8,7 @@ The NanoPods for pods is like the nano-armor for the Iron-Man, It can automatica
 
 ## Getting Started
 
-NanoPod Operator required [cert-manager](https://cert-manager.io/docs/installation/), So firstly make sure you have [cert-manager](https://cert-manager.io/docs/installation/) installed
+NanoPod Operator required [cert-manager](https://cert-manager.io/docs/installation/), so firstly make sure you have [cert-manager](https://cert-manager.io/docs/installation/) installed
 
 Then run the following scripts in your Kubernetes, to install NanoPod Operator and related CRDs, register webhooks.
 ```shell
@@ -17,7 +17,7 @@ kubectl apply -f https://github.com/Duncan-tree-zhou/nano-pod/releases/download/
 
 After the `nano-pod-controller-manager` deployment is ready, the functionality of NanoPod is enabled. 
 
-Then create namespace `nano-pod-test` for testing, and apply the following yaml to create a NanoPod: 
+Then create namespace `nano-pod-test` for testing, and apply the following yaml to `nano-pod-test` namespace: 
 
 ```yaml
 # my-nano-pod.yaml
