@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         app:  nginx-nano-pod-enabled
-        nano-pods: ""
+        nano-pods: "my-nano-pod"
     spec:
       containers:
       - name: mysql01
