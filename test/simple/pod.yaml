@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-869c5bd95b-bkd4p
+  namespace: nano-pod-test
+spec:
+  containers:
+    - name: mysql
+      image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
+      env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD # this env is added by NanoPod
+          value: "true"
+        - name: MYSQL_DATABASE
+          value: mydb02 # this value is overwritten by NanoPod
+      resources: # resources are added by NanoPod
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 256Mi
+
+
+

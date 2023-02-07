@@ -5,19 +5,14 @@ metadata:
   namespace: nano-pod-test
 spec:
   template:
-    metadata:
-      annotations:
-        nanopod/test: "enabled-case"
-      labels:
-        nanopod-test: "enabled-case"
     spec:
       containers:
-      - name: mysql01
+      - name: mysql
         env:
-          - name: "env0101"
-            value: "value0103"
-          - name: "env0102"
-            value: "value0103"
+          - name: MYSQL_ALLOW_EMPTY_PASSWORD
+            value: "true"
+          - name: MYSQL_DATABASE
+            value: mydb02
         resources:
           limits:
             cpu: 500m
@@ -25,3 +20,7 @@ spec:
           requests:
             cpu: 100m
             memory: 256Mi
+
+
+
+

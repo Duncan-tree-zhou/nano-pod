@@ -1,38 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-nano-pod-enabled
+  name: mysql
   namespace: nano-pod-test
   labels:
-    app: nginx
+    app: mysql
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app:  nginx-nano-pod-enabled
+      app:  mysql
   template:
     metadata:
       labels:
-        app:  nginx-nano-pod-enabled
+        app:  mysql
         nano-pods: "my-nano-pod"
     spec:
       containers:
-      - name: mysql01
+      - name: mysql
         image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
         env:
-          - name: "env0102"
-            value: "value0102"
-          - name: "MYSQL_ALLOW_EMPTY_PASSWORD"
-            value: "true"
-          - name: "MYSQL_DATABASE"
-            value: "mydb"
-        livenessProbe:
-          tcpSocket:
-            port: 3306
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          tcpSocket:
-            port: 3306
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          - name: MYSQL_DATABASE
+            value: mydb01
+
+
+

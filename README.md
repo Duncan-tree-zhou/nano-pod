@@ -6,6 +6,12 @@ NanoPod help you to patch your pods automatically without changing your Deployme
 
 The NanoPods for pods is like the nano-armor for the Iron-Man, It can automatically arm your pods without changing Deployment/StatefulSet/Job/ReplicaSet etc. Only the pods labeled with "nano-pods" would be accessed to. It provides an aspect oriented configuration.
 
+## How To Work
+
+The following picture shows how does Nano Pod work.
+
+![How Nano Pod work](./doc/img/how-nano-pod-work.png)
+
 ## Getting Started
 
 NanoPod Operator required [cert-manager](https://cert-manager.io/docs/installation/), so firstly make sure you have [cert-manager](https://cert-manager.io/docs/installation/) installed
@@ -30,19 +36,20 @@ spec:
   template:
     spec:
       containers:
-      - name: mysql01
-        env:
-          - name: "env0101"
-            value: "value0103"
-          - name: "env0102"
-            value: "value0103"
-        resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
+        - name: mysql
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "true"
+            - name: MYSQL_DATABASE
+              value: mydb02
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+
 ```
 
 The structure of spec.template is exactly the same as of deployment.spec.template.
@@ -65,48 +72,34 @@ If you apply a Deployment like this:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql-nano-pod-enabled
+  name: mysql
   namespace: nano-pod-test
   labels:
-    app: nginx
+    app: mysql
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app:  nginx-nano-pod-enabled
+      app:  mysql
   template:
     metadata:
       labels:
-        app:  nginx-nano-pod-enabled
-        nano-pods: ""
+        app:  mysql
+        nano-pods: "my-nano-pod"
     spec:
       containers:
-      - name: mysql01
-        image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
-        env:
-          - name: "env0102"
-            value: "value0102"
-          - name: "MYSQL_ALLOW_EMPTY_PASSWORD"
-            value: "true"
-          - name: "MYSQL_DATABASE"
-            value: "mydb"
-        livenessProbe:
-          tcpSocket:
-            port: 3306
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          tcpSocket:
-            port: 3306
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: mysql
+          image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
+          env:
+            - name: MYSQL_DATABASE
+              value: mydb01
 
 ```
 
 Run the following script to get the pod.
  
 ```shell
-kubectl get pod -l app=mysql-nano-pod-enabled -o yaml
+kubectl get pod -l app=mysql -o yaml
 ```
 
 you will get a pod with NanoPod patched.
@@ -115,43 +108,18 @@ you will get a pod with NanoPod patched.
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    app: mysql-nano-pod-enabled
-    nano-pods: my-nano-pod
-  name: mysql-nano-pod-enabled-869c5bd95b-bkd4p
+  name: mysql-869c5bd95b-bkd4p
   namespace: nano-pod-test
-  uid: 2a34b39c-9e55-4158-aa83-16db56009f40
 spec:
   containers:
-    - env:
-        - name: env0101 # this env is added by NanoPod
-          value: value0103
-        - name: env0102
-          value: value0103 # this value is overwritten by NanoPod
-        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+    - name: mysql
+      image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
+      env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD # this env is added by NanoPod
           value: "true"
         - name: MYSQL_DATABASE
-          value: mydb
-      image: treezh-docker.pkg.coding.net/demo03/public/mysql:8.0.31
-      imagePullPolicy: IfNotPresent
-      livenessProbe:
-        failureThreshold: 3
-        initialDelaySeconds: 15
-        periodSeconds: 20
-        successThreshold: 1
-        tcpSocket:
-          port: 3306
-        timeoutSeconds: 1
-      name: mysql01
-      readinessProbe:
-        failureThreshold: 3
-        initialDelaySeconds: 5
-        periodSeconds: 10
-        successThreshold: 1
-        tcpSocket:
-          port: 3306
-        timeoutSeconds: 1
-      resources: # resources are added by NanoPod 
+          value: mydb02 # this value is overwritten by NanoPod
+      resources: # resources are added by NanoPod
         limits:
           cpu: 500m
           memory: 512Mi
