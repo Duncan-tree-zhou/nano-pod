@@ -105,6 +105,7 @@ kubectl get pod -l app=mysql -o yaml
 you will get a pod with NanoPod patched.
 
 ```yaml
+# pod.yaml
 apiVersion: v1
 kind: Pod
 metadata:
